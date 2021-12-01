@@ -57,6 +57,8 @@ namespace illusion {
 
 		// O(N)
 		template<class ...C> struct append : none {};
+		template<>
+		struct append<> : list<> {};
 		template<template<class ...> class Container, class ... T1>
 		struct append<Container<T1...>> : Container<T1...> {};
 		template<template<class ...> class Container, class ... T1, class ... T2>

@@ -1,23 +1,13 @@
-#include "include/trie.hh"
-#include "include/fixed_string.hh"
-#include "include/display.hh"
+#include "include/regex.hh"
 #include <iostream>
 using namespace illusion;
 
-
-using p = list<
-	string<'a', 'b', 'c'>,
-	string<'a', 'b'>,
-	string<'b', 'c'>
->;
-
 int main() {
-
-	using trie = Trie<
-		str<"dictionary">,
-		str<"today">,
-		str<"I am happy">
-	>;
-	constexpr bool b = trie::contain("today");
-	std::cout << b << std::endl;
+	auto reg = any_of<"+-">().optional() << any_of<"0123456789">().more();
+	
+	while (true) {
+		std::string s;
+		std::cin >> s;
+		std::cout << std::boolalpha << reg.match(s.c_str()) << std::endl;
+	}
 }
