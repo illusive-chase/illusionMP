@@ -4,7 +4,7 @@ using namespace illusion::regex;
 
 
 int main() {
-	auto reg = any_of<"+-">().optional() << any_of<"0123456789">().more();
+	auto reg = make_default_regex<float>();
 
 	while (true) {
 		std::string s;

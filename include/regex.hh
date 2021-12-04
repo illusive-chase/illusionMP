@@ -6,7 +6,7 @@
 namespace illusion {
 
 	namespace regex {
-		namespace impl {
+		namespace _regex_impl {
 
 			using illusion::container::list;
 
@@ -140,18 +140,18 @@ namespace illusion {
 		template<template<class> class Builder>
 		struct Regex {
 
-			using NFA = typename Builder<container::list<impl::FinalNode>>::value;
+			using NFA = typename Builder<container::list<_regex_impl::FinalNode>>::value;
 
-			constexpr Regex<typename impl::build_more<Builder>::value> more() const { return {}; }
-			constexpr Regex<typename impl::build_many<Builder>::value> many() const { return {}; }
-			constexpr Regex<typename impl::build_optional<Builder>::value> optional() const { return {}; }
+			constexpr Regex<typename _regex_impl::build_more<Builder>::value> more() const { return {}; }
+			constexpr Regex<typename _regex_impl::build_many<Builder>::value> many() const { return {}; }
+			constexpr Regex<typename _regex_impl::build_optional<Builder>::value> optional() const { return {}; }
 
 			constexpr bool match(const char* p) const {
-				return impl::matcher<typename impl::get_equalset<NFA>::value>::match(p);
+				return _regex_impl::matcher<typename _regex_impl::get_equalset<NFA>::value>::match(p);
 			}
 		};
 
-		namespace impl {
+		namespace _regex_impl {
 			template<char ... Cs>
 			constexpr Regex<typename build_str<Cs...>::value> make_regex_impl(string<Cs...>) {
 				return {};
@@ -166,26 +166,50 @@ namespace illusion {
 
 		template<fixed_string Str>
 		constexpr auto make_regex() {
-			return impl::make_regex_impl(str<Str>{});
+			return _regex_impl::make_regex_impl(str<Str>{});
 		}
 
 		template<fixed_string Str>
 		constexpr auto any_of() {
-			return impl::any_of_impl(str<Str>{});
+			return _regex_impl::any_of_impl(str<Str>{});
 		}
 
 		template<template<class> class Builder1, template<class> class Builder2>
-		constexpr Regex<typename impl::build_options<Builder1, Builder2>::value> operator | (Regex<Builder1>, Regex<Builder2>) { return {}; }
+		constexpr Regex<typename _regex_impl::build_options<Builder1, Builder2>::value> operator | (Regex<Builder1>, Regex<Builder2>) { return {}; }
 
 		template<template<class> class Builder1, template<class> class Builder2>
-		constexpr Regex<typename impl::build_link<Builder1, Builder2>::value> operator << (Regex<Builder1>, Regex<Builder2>) { return {}; }
+		constexpr Regex<typename _regex_impl::build_link<Builder1, Builder2>::value> operator << (Regex<Builder1>, Regex<Builder2>) { return {}; }
+
+
+		template<class T>
+		constexpr auto make_default_regex();
+
+		template<>
+		constexpr auto make_default_regex<int>() {
+			return 
+				make_regex<"+">().optional() << any_of<"123456789">() << any_of<"0123456789">().many() |
+				make_regex<"0">() |
+				make_regex<"-">() << any_of<"123456789">() << any_of<"0123456789">().many();
+		}
+
+		template<>
+		constexpr auto make_default_regex<unsigned>() {
+			return
+				any_of<"123456789">() << any_of<"0123456789">().many() |
+				make_regex<"0">() | 
+				make_regex<"0x">() << any_of<"0123456789ABCDEFabcdef">().more();
+		}
+
+
+		template<>
+		constexpr auto make_default_regex<float>() {
+			//(+-)?((0?|[1-9]\d*)(.\d*|.)?|0.?)
+			return
+				any_of<"+-">().optional() <<
+				(((make_regex<"0">().optional() | any_of<"123456789">() << any_of<"0123456789">().many()) <<
+				  (make_regex<".">() << any_of<"0123456789">().many() | make_regex<".">()).optional()) |
+				 make_regex<"0.">().optional());
+		}
 
 	}
-
-	
-
-
-	
-
-	
 }
