@@ -6,6 +6,8 @@
 namespace illusion {
 
 	namespace _impl_display {
+		using namespace illusion::container;
+
 		template<class T> struct instance;
 		template<char ...C> struct instance<string<C...>> {
 			static constexpr char value[] = { C...,'\0' };
