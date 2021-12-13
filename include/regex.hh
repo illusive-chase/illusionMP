@@ -24,6 +24,7 @@ namespace illusion {
 				using charvalue = character<C>;
 				using next = list<NextNodes...>;
 				using equal = list<EqualNodes...>;
+
 			};
 
 			using FinalNode = Node<0, list<>, list<>>;
@@ -67,13 +68,17 @@ namespace illusion {
 				>::value;
 
 				template<class ...Items>
-				constexpr static bool match_impl(const char* curr, const char* next, list<Items...>) {
-					return (... || (Items::key::value == *curr && matcher<Items::value>::match(next)));
+				inline constexpr static const char* match_impl(const char* curr, const char* next, list<Items...>) {
+					const char* res = nullptr;
+					(... || (Items::key::value == *curr && ((res = matcher<Items::value>::match(next)), true)));
+					return res;
 				}
 
-				constexpr static bool match(const char* p) {
-					if (p[0] == 0) return is_final_node::value;
-					return match_impl(p, p + 1, transfer_table{});
+				constexpr static const char* match(const char* p) {
+					if (*p == 0) return is_final_node::value ? p : nullptr;
+					const char* result = match_impl(p, p + 1, transfer_table{});
+					if (is_final_node::value && !result) return p;
+					return result;
 				}
 			};
 
@@ -124,9 +129,6 @@ namespace illusion {
 			struct self_equal_node : Node<0, list<>, list<R<
 				unpack<container::push_front<EndLst, self_equal_node<R, EndLst>>>>>> {};
 
-			template<class Name>
-			using make_final = Node<static_cast<char>(0xff), list<>, list<Name>>;
-
 			template<template<class> class R>
 			struct build_more {
 				template<class EndLst>
@@ -140,13 +142,12 @@ namespace illusion {
 		template<template<class> class Builder>
 		struct Regex {
 
-			using NFA = typename Builder<container::list<_regex_impl::FinalNode>>::value;
-
 			constexpr Regex<typename _regex_impl::build_more<Builder>::value> more() const { return {}; }
 			constexpr Regex<typename _regex_impl::build_many<Builder>::value> many() const { return {}; }
 			constexpr Regex<typename _regex_impl::build_optional<Builder>::value> optional() const { return {}; }
 
-			constexpr bool match(const char* p) const {
+			constexpr const char* match(const char* p) const {
+				using NFA = typename Builder<container::list<_regex_impl::FinalNode>>::value;
 				return _regex_impl::matcher<typename _regex_impl::get_equalset<NFA>::value>::match(p);
 			}
 		};
@@ -180,6 +181,25 @@ namespace illusion {
 		template<template<class> class Builder1, template<class> class Builder2>
 		constexpr Regex<typename _regex_impl::build_link<Builder1, Builder2>::value> operator << (Regex<Builder1>, Regex<Builder2>) { return {}; }
 
+		constexpr auto digit() {
+			return any_of<"123456789">();
+		}
+
+		constexpr auto space() {
+			return any_of<" \n\t">();
+		}
+
+		constexpr auto lower_case() {
+			return any_of<"abcedfghijklmnopqrstuvwxyz">();
+		}
+
+		constexpr auto upper_case() {
+			return any_of<"ABCDEFGHIJKLMNOPQRSTUVWXYZ">();
+		}
+
+		constexpr auto letter() {
+			return any_of<"abcedfghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ">();
+		}
 
 		template<class T>
 		constexpr auto make_default_regex();
@@ -203,12 +223,12 @@ namespace illusion {
 
 		template<>
 		constexpr auto make_default_regex<float>() {
-			//(+-)?((0?|[1-9]\d*)(.\d*|.)?|0.?)
+			//(+-)?((0|[1-9]\d*)(.\d*|.)?|0.?)
 			return
 				any_of<"+-">().optional() <<
-				(((make_regex<"0">().optional() | any_of<"123456789">() << any_of<"0123456789">().many()) <<
+				(((make_regex<"0">() | any_of<"123456789">() << any_of<"0123456789">().many()) <<
 				  (make_regex<".">() << any_of<"0123456789">().many() | make_regex<".">()).optional()) |
-				 make_regex<"0.">().optional());
+				 make_regex<"0">() << make_regex<".">().optional());
 		}
 
 	}
