@@ -70,7 +70,7 @@ namespace illusion {
 				template<class ...Items>
 				inline constexpr static const char* match_impl(const char* curr, const char* next, list<Items...>) {
 					const char* res = nullptr;
-					(... || (Items::key::value == *curr && ((res = matcher<Items::value>::match(next)), true)));
+					(... || (Items::key::value == *curr && ((res = matcher<typename Items::value>::match(next)), true)));
 					return res;
 				}
 

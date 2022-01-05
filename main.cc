@@ -5,13 +5,6 @@ using namespace illusion::parser;
 
 
 int main() {
-	/*auto reg = make_default_regex<float>();
-
-	while (true) {
-		std::string s;
-		std::cin >> s;
-		std::cout << reg.match(s.c_str()) << std::endl;
-	}*/
 
 	constexpr auto parser = sequence 
 		<< parse_to_int()
@@ -19,6 +12,9 @@ int main() {
 		<< parse_to_string(make_regex<"<>">())
 		<< parse_to_vector();
 
+	// result: tuple<int, bool, char const*, std::array<int, 3>>
 	constexpr auto result = parser.parse(illusion::str<"123true<>[1,2,3]">());
+	static_assert(std::is_same_v<decltype(result), const std::tuple<int, bool, char const*, std::array<int, 3>>>, "error");
+	
 	return 0;
 }
